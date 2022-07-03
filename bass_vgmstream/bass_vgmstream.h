@@ -37,6 +37,7 @@ extern "C"
 
 BASS_VGMSTREAM_API HSTREAM BASS_VGMSTREAM_StreamCreate(const char* file, DWORD flags);
 BASS_VGMSTREAM_API HSTREAM BASS_VGMSTREAM_StreamCreateFromMemory(unsigned char* buf, int bufsize, const char* name, DWORD flags);
+unsigned char* BASS_VGMSTREAM_ConvertStreamToWAVE(unsigned char* data, int datasize, const char* name);
 
 #ifdef __cplusplus
 }

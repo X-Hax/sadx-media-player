@@ -184,3 +184,60 @@ BASS_VGMSTREAM_API HSTREAM BASS_VGMSTREAM_StreamCreateFromMemory(unsigned char* 
 	BASS_ChannelSetSync(h, BASS_SYNC_FREE | BASS_SYNC_MIXTIME, 0, &vgmStreamOnFree, vgmstream);
 	return h;
 }
+
+unsigned char* BASS_VGMSTREAM_ConvertStreamToWAVE(unsigned char* data, int datasize, const char* name)
+{
+	const int BUFSIZE = 4000; // Sample buffer
+	STREAMFILE* infile = open_memory_streamfile(data, datasize, name);
+	VGMSTREAM* vgmstream = init_vgmstream_from_STREAMFILE(data);
+	sample* buf = NULL;
+	int32_t len;
+	double loop_count = 2.0;
+	double fade_seconds = 10.0;
+	double fade_delay_seconds = 0.0;
+	int32_t fade_samples;
+
+	if (!vgmstream)
+	{
+		return NULL;
+	}
+	buf = malloc(BUFSIZE * sizeof(sample) * vgmstream->channels);
+	len = get_vgmstream_play_samples(loop_count, fade_seconds, fade_delay_seconds, vgmstream);
+	uint8_t* decodebuf = malloc(0x2c + (sizeof(sample) * vgmstream->channels) * BUFSIZE);
+	fade_samples = fade_seconds * vgmstream->sample_rate;
+
+	/* slap on a .wav header */
+	make_wav_header((uint8_t*)buf, len, vgmstream->sample_rate, 2);
+	fwrite(buf, 1, 0x2c, decodebuf);
+
+	/* decode */
+	for (int i = 0; i < len; i += BUFSIZE)
+	{
+		int toget = BUFSIZE;
+		if (i + BUFSIZE > len) toget = len - i;
+		render_vgmstream(buf, toget, vgmstream);
+
+		if (vgmstream->loop_flag && fade_samples > 0)
+		{
+			int samples_into_fade = i - (len - fade_samples);
+			if (samples_into_fade + toget > 0) 
+			{
+				int j, k;
+				for (j = 0; j < toget; j++, samples_into_fade++)
+				{
+					if (samples_into_fade > 0) {
+						double fadedness = (double)(fade_samples - samples_into_fade) / fade_samples;
+						for (k = 0; k < vgmstream->channels; k++) 
+						{
+							buf[j * vgmstream->channels + k] = buf[j * vgmstream->channels + k] * fadedness;
+						}
+					}
+				}
+			}
+		}
+		swap_samples_le(buf, vgmstream->channels * toget);
+
+		fwrite(buf, sizeof(sample) * vgmstream->channels, toget, decodebuf);
+	}
+	return decodebuf;
+}
