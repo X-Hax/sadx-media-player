@@ -81,6 +81,78 @@ void CALLBACK vgmStreamOnFree(
 	close_vgmstream(stream);
 }
 
+// Read from memory: https://github.com/vgmstream/vgmstream/issues/662
+STREAMFILE* open_memory_streamfile(uint8_t* buf, size_t bufsize, const char* name);
+
+typedef struct {
+	STREAMFILE sf; /* pre-alloc'd part */
+
+	uint8_t* buf;
+	size_t bufsize;
+	const char* name;
+	off_t offset;
+} MEMORY_STREAMFILE;
+
+static size_t memory_read(MEMORY_STREAMFILE* sf, uint8_t* dst, off_t offset, size_t length) {
+	if (!dst || length <= 0 || offset < 0 || offset >= sf->bufsize)
+		return 0;
+	if (offset + length > sf->bufsize)
+		length = sf->bufsize - offset; /* clamp */
+
+	memcpy(dst, sf->buf + offset, length);
+	sf->offset = offset;
+	return length;
+}
+
+static size_t memory_get_size(MEMORY_STREAMFILE* sf) {
+	return sf->bufsize;
+}
+
+static size_t memory_get_offset(MEMORY_STREAMFILE* sf) {
+	return sf->offset;
+}
+
+static void memory_get_name(MEMORY_STREAMFILE* sf, char* buffer, size_t length) {
+	strncpy(buffer, sf->name, length);
+	buffer[length - 1] = '\0';
+}
+
+static STREAMFILE* memory_open(MEMORY_STREAMFILE* sf, const char* const filename, size_t buffersize) {
+	/* Some formats need to open companion files though, maybe pass N bufs+name per file */
+	/* also must detect "reopens", as internal processes need to clone this streamfile at times */
+	if (strcmp(filename, sf->name) == 0)
+		return open_memory_streamfile(sf->buf, sf->bufsize, sf->name); /* reopen */
+	return NULL;
+}
+
+static void memory_close(MEMORY_STREAMFILE* sf) {
+	free(sf);
+}
+
+STREAMFILE* open_memory_streamfile(uint8_t* buf, size_t bufsize, const char* name) {
+	MEMORY_STREAMFILE* this_sf = NULL;
+
+	this_sf = calloc(1, sizeof(MEMORY_STREAMFILE));
+	if (!this_sf) goto fail;
+
+	this_sf->sf.read = (void*)memory_read;
+	this_sf->sf.get_size = (void*)memory_get_size;
+	this_sf->sf.get_offset = (void*)memory_get_offset;
+	this_sf->sf.get_name = (void*)memory_get_name;
+	this_sf->sf.open = (void*)memory_open;
+	this_sf->sf.close = (void*)memory_close;
+
+	/* assumes bufs live externally during decode, otherwise malloc/memcpy and free on close */
+	this_sf->buf = buf;
+	this_sf->bufsize = bufsize;
+	this_sf->name = name;
+
+	return &this_sf->sf;
+fail:
+	free(this_sf);
+	return NULL;
+}
+
 BASS_VGMSTREAM_API HSTREAM BASS_VGMSTREAM_StreamCreate(const char* file, DWORD flags)
 {
 	HSTREAM h;
@@ -93,5 +165,22 @@ BASS_VGMSTREAM_API HSTREAM BASS_VGMSTREAM_StreamCreate(const char* file, DWORD f
 		return 0;
 
 	BASS_ChannelSetSync(h, BASS_SYNC_FREE|BASS_SYNC_MIXTIME, 0, &vgmStreamOnFree, stream);
+	return h;
+}
+
+BASS_VGMSTREAM_API HSTREAM BASS_VGMSTREAM_StreamCreateFromMemory(unsigned char* buf, int bufsize, const char* name, DWORD flags)
+{
+	HSTREAM h;
+	if (!buf)
+		return 0;
+
+	STREAMFILE* sf = open_memory_streamfile(buf, bufsize, name);
+	VGMSTREAM* vgmstream = init_vgmstream_from_STREAMFILE(sf);
+
+	h = BASS_StreamCreate(vgmstream->sample_rate, vgmstream->channels, flags, &vgmStreamProc, vgmstream);
+	if (!h)
+		return 0;
+
+	BASS_ChannelSetSync(h, BASS_SYNC_FREE | BASS_SYNC_MIXTIME, 0, &vgmStreamOnFree, vgmstream);
 	return h;
 }
