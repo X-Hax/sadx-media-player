@@ -20,7 +20,6 @@
 #ifndef _BASS_VGMSTREAM_H_
 #define _BASS_VGMSTREAM_H_
 
-
 #ifdef BASS_VGMSTREAM_EXPORTS
 #define BASS_VGMSTREAM_API __declspec(dllexport)
 #else
@@ -37,7 +36,10 @@ extern "C"
 
 BASS_VGMSTREAM_API HSTREAM BASS_VGMSTREAM_StreamCreate(const char* file, DWORD flags);
 BASS_VGMSTREAM_API HSTREAM BASS_VGMSTREAM_StreamCreateFromMemory(unsigned char* buf, int bufsize, const char* name, DWORD flags);
-unsigned char* BASS_VGMSTREAM_ConvertStreamToWAVE(unsigned char* data, int datasize, const char* name);
+BASS_VGMSTREAM_API void* BASS_VGMSTREAM_InitVGMStreamFromMemory(void* data, int size, const char* name);
+BASS_VGMSTREAM_API void BASS_VGMSTREAM_CloseVGMStream(void* vgmstream);
+BASS_VGMSTREAM_API int BASS_VGMSTREAM_GetVGMStreamOutputSize(void* vgmstream);
+BASS_VGMSTREAM_API int BASS_VGMSTREAM_ConvertVGMStreamToWav(void* vgmstream, const char* outputdata);
 
 #ifdef __cplusplus
 }
