@@ -76,6 +76,47 @@ fail:
 }
 
 // Conversion
+
+/* make a loop chunk for PCM .wav */
+/* buffer must be 0x44 bytes */
+void make_smpl_header(uint8_t* buf, int32_t loop_start, int32_t loop_end)
+{
+	// SMLP header
+	memcpy(buf + 0, "smpl", 4);
+	// Size of SMPL chunk (always 0x3C for one loop)
+	put_32bitLE(buf + 4, 0x3C);
+	// Manufacturer
+	put_32bitLE(buf + 8, 0);
+	// Product
+	put_32bitLE(buf + 12, 0);
+	// Sample Period
+	put_32bitLE(buf + 16, 45351); // SADX value
+	// MIDI Unity Note
+	put_32bitLE(buf + 20, 60); // SADX value
+	// MIDI pitch fraction
+	put_32bitLE(buf + 24, 0);
+	// SMPTE format
+	put_32bitLE(buf + 28, 30); // SADX value
+	// SMPTE offset
+	put_32bitLE(buf + 32, 0);
+	// Number of sample loops (always 1 in SADX)
+	put_32bitLE(buf + 36, 1);
+	// Sampler specific data (unused in SADX)
+	put_32bitLE(buf + 40, 0);
+	// Sample loop ID (always 0 in SADX)
+	put_32bitLE(buf + 44, 0);
+	// Sample loop type (always 0 in SADX)
+	put_32bitLE(buf + 48, 0);
+	// Loop start
+	put_32bitLE(buf + 52, loop_start);
+	// Loop end
+	put_32bitLE(buf + 56, loop_end);
+	// Sample loop fraction (always 0 in SADX)
+	put_32bitLE(buf + 60, 0);
+	// Sample loop repeat count (always infinite?)
+	put_32bitLE(buf + 64, 0);
+}
+
 int Convert(VGMSTREAM* vgmstream, const char* outputdata)
 {
 	int result = 1; // 0 if there is no error
@@ -85,16 +126,17 @@ int Convert(VGMSTREAM* vgmstream, const char* outputdata)
 	int position = 0x2C; // Buffer seeking
 
 	// Init
-	//printf("Start\n");
 	if (!vgmstream)
 	{
-		//printf("Dead\n");
 		return 1;
 	}
 
 	// Allocate buffer
 	buf = malloc(BUFSIZE * sizeof(sample) * vgmstream->channels);
+
 	len = get_vgmstream_play_samples(0, 0, 0, vgmstream);
+	if (vgmstream->loop_end_sample > len)
+		len += (vgmstream->loop_end_sample - len);
 
 	// Add WAV header
 	make_wav_header((uint8_t*)buf, len, vgmstream->sample_rate, vgmstream->channels);
@@ -109,9 +151,18 @@ int Convert(VGMSTREAM* vgmstream, const char* outputdata)
 
 		render_vgmstream(buf, toget, vgmstream);
 		swap_samples_le(buf, vgmstream->channels * toget);
-		//printf("Step: %u\n", i);
 		memcpy(&outputdata[position], buf, sizeof(sample) * vgmstream->channels * toget);
 		position += sizeof(sample) * vgmstream->channels * toget;
+	}
+
+	// Add loop header
+	if (vgmstream->loop_flag == 1)
+	{
+		int outsize = BASS_VGMSTREAM_GetVGMStreamOutputSize(vgmstream);
+		make_smpl_header((uint8_t*)buf, vgmstream->loop_start_sample, vgmstream->loop_end_sample);
+		memcpy(&outputdata[position], buf, 68);
+		// Update WAV header with correct size
+		put_32bitLE(outputdata + 4, outsize - 8);
 	}
 
 	// Cleanup
@@ -136,7 +187,9 @@ BASS_VGMSTREAM_API int BASS_VGMSTREAM_GetVGMStreamOutputSize(void* vgmstream)
 {
 	VGMSTREAM* stream = (VGMSTREAM*)vgmstream;
 	int numsample = get_vgmstream_play_samples(0, 0, 0, stream);
-	return numsample * sizeof(sample) * stream->channels + 0x2C; // + WAV header
+	if (stream->loop_end_sample > numsample)
+		numsample += (stream->loop_end_sample - numsample);
+	return numsample * sizeof(sample) * stream->channels + 0x2C + (stream->loop_flag ? 0x44 : 0); // + WAV header + possibly smpl header for 1 loop
 }
 
 BASS_VGMSTREAM_API int BASS_VGMSTREAM_ConvertVGMStreamToWav(void* vgmstream, const char* outputdata)
@@ -144,7 +197,6 @@ BASS_VGMSTREAM_API int BASS_VGMSTREAM_ConvertVGMStreamToWav(void* vgmstream, con
 	return Convert((VGMSTREAM*)vgmstream, outputdata);
 }
 
-#ifdef  DEBUG
 int main(int argc, char* argv[])
 {
 	const char* srcFile = "test.adx";
@@ -153,28 +205,41 @@ int main(int argc, char* argv[])
 	int outputSize = 0;
 	void* InputBuffer;
 	const char* OutputBuffer = NULL;
-
-	// Read source file
+	double loop_count = 10.0;
+	double fade_seconds = 0.0;
+	double fade_delay_seconds = 0.0;
+	int fade_samples = 0;
 	FILE* f;
+
+	// Open input file
 	fopen_s(&f, srcFile, "rb");
 	fseek(f, 0L, SEEK_END);
+	
+	// Get input size and allocate memory
 	inputSize = ftell(f);
 	fseek(f, 0L, SEEK_SET);
+	
+	// Read source file into memory
 	InputBuffer = malloc(inputSize);
 	fread(InputBuffer, 1, inputSize, f);
 	fclose(f);
 
-	// Create vgmstream
+	// Create vgmstream from memory
 	VGMSTREAM* vgmstream = BASS_VGMSTREAM_InitVGMStreamFromMemory(InputBuffer, inputSize, srcFile);
 
-	// Get output size
+	// Print loop info
+	if (vgmstream->loop_flag)
+	{
+		printf("Loop start: %u\n", vgmstream->loop_start_sample);
+		printf("Loop end: %u\n", vgmstream->loop_end_sample);
+	}
+
+	// Get output size and allocate memory
 	outputSize = BASS_VGMSTREAM_GetVGMStreamOutputSize(vgmstream);
 	OutputBuffer = malloc(outputSize);
 
 	// Convert data
-	Convert(vgmstream, OutputBuffer);
-	printf("Output size 2: %u\n", outputSize);
-	printf("Output data: %u\n", OutputBuffer[0]);
+	Convert(vgmstream, OutputBuffer);		
 
 	// Write output file
 	fopen_s(&f, dstFile, "wb");
@@ -182,4 +247,3 @@ int main(int argc, char* argv[])
 	fclose(f);
 	return 0;
 }
-#endif
