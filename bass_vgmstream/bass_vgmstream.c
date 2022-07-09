@@ -105,6 +105,9 @@ BASS_VGMSTREAM_API HSTREAM BASS_VGMSTREAM_StreamCreateFromMemory(unsigned char* 
 	STREAMFILE* sf = open_memory_streamfile(buf, bufsize, name);
 	VGMSTREAM* vgmstream = init_vgmstream_from_STREAMFILE(sf);
 
+	if (vgmstream->channels > 1)
+		flags &= ~BASS_SAMPLE_3D; // Cannot create 3D samples from stereo
+
 	h = BASS_StreamCreate(vgmstream->sample_rate, vgmstream->channels, flags, &vgmStreamProc, vgmstream);
 	if (!h)
 		return 0;
