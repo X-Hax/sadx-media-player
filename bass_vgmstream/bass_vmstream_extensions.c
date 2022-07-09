@@ -3,6 +3,55 @@
 #include <vgmstream.h>
 #include <stdlib.h>
 
+// WAV header function from vgmstream r1040 modified to store loop size
+void make_wav_header(uint8_t* buf, int32_t sample_count, int32_t sample_rate, int channels, int loop) 
+{
+	size_t bytecount;
+
+	bytecount = sample_count * channels * sizeof(sample);
+
+	/* RIFF header */
+	memcpy(buf + 0, "RIFF", 4);
+
+	/* size of RIFF */
+	put_32bitLE(buf + 4, (int32_t)(bytecount + 0x2c - 8 + loop * 0x44));
+
+	/* WAVE header */
+	memcpy(buf + 8, "WAVE", 4);
+
+	/* WAVE fmt chunk */
+	memcpy(buf + 0xc, "fmt ", 4);
+
+	/* size of WAVE fmt chunk */
+	put_32bitLE(buf + 0x10, 0x10);
+
+	/* compression code 1=PCM */
+	put_16bitLE(buf + 0x14, 1);
+
+	/* channel count */
+	put_16bitLE(buf + 0x16, channels);
+
+	/* sample rate */
+	put_32bitLE(buf + 0x18, sample_rate);
+
+	/* bytes per second */
+	put_32bitLE(buf + 0x1c, sample_rate * channels * sizeof(sample));
+
+	/* block align */
+	put_16bitLE(buf + 0x20, (int16_t)(channels * sizeof(sample)));
+
+	/* significant bits per sample */
+	put_16bitLE(buf + 0x22, sizeof(sample) * 8);
+
+	/* PCM has no extra format bytes, so we don't even need to specify a count */
+
+	/* WAVE data chunk */
+	memcpy(buf + 0x24, "data", 4);
+
+	/* size of WAVE data chunk */
+	put_32bitLE(buf + 0x28, (int32_t)bytecount);
+}
+
 // Read from memory: https://github.com/vgmstream/vgmstream/issues/662
 STREAMFILE* open_memory_streamfile(uint8_t* buf, size_t bufsize, const char* name);
 
@@ -12,10 +61,10 @@ typedef struct {
 	uint8_t* buf;
 	size_t bufsize;
 	const char* name;
-	off_t offset;
+	offv_t offset;
 } MEMORY_STREAMFILE;
 
-static size_t memory_read(MEMORY_STREAMFILE* sf, uint8_t* dst, off_t offset, size_t length) {
+static size_t memory_read(MEMORY_STREAMFILE* sf, uint8_t* dst, offv_t offset, size_t length) {
 	if (!dst || length <= 0 || offset < 0 || offset >= sf->bufsize)
 		return 0;
 	if (offset + length > sf->bufsize)
@@ -117,7 +166,7 @@ void make_smpl_header(uint8_t* buf, int32_t loop_start, int32_t loop_end)
 	put_32bitLE(buf + 64, 0);
 }
 
-int Convert(VGMSTREAM* vgmstream, const char* outputdata)
+int Convert(VGMSTREAM* vgmstream, unsigned char* outputdata)
 {
 	int result = 1; // 0 if there is no error
 	sample* buf = NULL;
@@ -133,15 +182,16 @@ int Convert(VGMSTREAM* vgmstream, const char* outputdata)
 
 	// Allocate buffer
 	buf = malloc(BUFSIZE * sizeof(sample) * vgmstream->channels);
+	if (buf == NULL)
+		return 1;
 
 	len = get_vgmstream_play_samples(0, 0, 0, vgmstream);
 	if (vgmstream->loop_end_sample > len)
 		len += (vgmstream->loop_end_sample - len);
 
 	// Add WAV header
-	make_wav_header((uint8_t*)buf, len, vgmstream->sample_rate, vgmstream->channels);
-	memcpy(outputdata, buf, 0x2C);
-
+	make_wav_header(outputdata, len, vgmstream->sample_rate, vgmstream->channels, vgmstream->loop_flag);
+	
 	// Decode data
 	for (int i = 0; i < len; i += BUFSIZE)
 	{
@@ -158,11 +208,7 @@ int Convert(VGMSTREAM* vgmstream, const char* outputdata)
 	// Add loop header
 	if (vgmstream->loop_flag == 1)
 	{
-		int outsize = BASS_VGMSTREAM_GetVGMStreamOutputSize(vgmstream);
-		make_smpl_header((uint8_t*)buf, vgmstream->loop_start_sample, vgmstream->loop_end_sample);
-		memcpy(&outputdata[position], buf, 68);
-		// Update WAV header with correct size
-		put_32bitLE(outputdata + 4, outsize - 8);
+		make_smpl_header(&outputdata[position], vgmstream->loop_start_sample, vgmstream->loop_end_sample);
 	}
 
 	// Cleanup
@@ -192,7 +238,7 @@ BASS_VGMSTREAM_API int BASS_VGMSTREAM_GetVGMStreamOutputSize(void* vgmstream)
 	return numsample * sizeof(sample) * stream->channels + 0x2C + (stream->loop_flag ? 0x44 : 0); // + WAV header + possibly smpl header for 1 loop
 }
 
-BASS_VGMSTREAM_API int BASS_VGMSTREAM_ConvertVGMStreamToWav(void* vgmstream, const char* outputdata)
+BASS_VGMSTREAM_API int BASS_VGMSTREAM_ConvertVGMStreamToWav(void* vgmstream, unsigned char* outputdata)
 {
 	return Convert((VGMSTREAM*)vgmstream, outputdata);
 }
@@ -204,15 +250,21 @@ int main(int argc, char* argv[])
 	int inputSize;
 	int outputSize = 0;
 	void* InputBuffer;
-	const char* OutputBuffer = NULL;
+	unsigned char* OutputBuffer = NULL;
 	double loop_count = 10.0;
 	double fade_seconds = 0.0;
 	double fade_delay_seconds = 0.0;
 	int fade_samples = 0;
-	FILE* f;
+	FILE* f = NULL;
+	errno_t err;
 
 	// Open input file
-	fopen_s(&f, srcFile, "rb");
+	err = fopen_s(&f, srcFile, "rb");
+	if (err || f == NULL)
+	{
+		printf("Input file error\n");
+		return;
+	}
 	fseek(f, 0L, SEEK_END);
 	
 	// Get input size and allocate memory
@@ -221,6 +273,11 @@ int main(int argc, char* argv[])
 	
 	// Read source file into memory
 	InputBuffer = malloc(inputSize);
+	if (InputBuffer == NULL)
+	{
+		printf("Could not allocate input buffer\n");
+		return;
+	}
 	fread(InputBuffer, 1, inputSize, f);
 	fclose(f);
 
@@ -242,7 +299,17 @@ int main(int argc, char* argv[])
 	Convert(vgmstream, OutputBuffer);		
 
 	// Write output file
-	fopen_s(&f, dstFile, "wb");
+	err = fopen_s(&f, dstFile, "wb");
+	if (err || f == NULL)
+	{
+		printf("Output file error\n");
+		return;
+	}
+	if (OutputBuffer == NULL)
+	{
+		printf("Output buffer empty\n");
+		return;
+	}
 	fwrite(OutputBuffer, outputSize, 1, f);
 	fclose(f);
 	return 0;

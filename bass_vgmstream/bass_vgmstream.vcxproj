@@ -14,21 +14,22 @@
     <ProjectGuid>{3C5F3ED2-38FB-4B29-9E2A-1A758D64BD90}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>bass_vgmstream</RootNamespace>
-    <WindowsTargetPlatformVersion>7.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -42,13 +43,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(BASS_HOME);$(VGMSTREAM_HOME)\src;$(VGMSTREAM_HOME)\ext_includes;$(IncludePath)</IncludePath>
-    <LibraryPath>$(BASS_HOME);$(VGMSTREAM_HOME)\src\Release;$(VGMSTREAM_HOME)\ext_libs;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)bass\c;$(SolutionDir)vgmstream\src;$(SolutionDir)vgmstream\ext_includes;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)bass\c;$(SolutionDir)Release;$(SolutionDir)vgmstream\ext_libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(BASS_HOME);$(VGMSTREAM_HOME)\src;$(VGMSTREAM_HOME)\ext_includes;$(IncludePath)</IncludePath>
-    <LibraryPath>$(BASS_HOME);$(VGMSTREAM_HOME)\src\Release;$(VGMSTREAM_HOME)\ext_libs;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)bass\c;$(SolutionDir)vgmstream\src;$(SolutionDir)vgmstream\ext_includes;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)bass\c;$(SolutionDir)Release;$(SolutionDir)vgmstream\ext_libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -56,12 +57,12 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;BASS_VGMSTREAM_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>bass.lib;libvgmstream.lib;libg7221_decode.lib;libmpg123-0.lib;libvorbis.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>bass.lib;libspeex/libspeex.lib;libvorbis.lib;avcodec.lib;avformat.lib;avutil.lib;libmpg123-0.lib;libg719_decode.lib;libcelt-0061.lib;libcelt-0110.lib;libatrac9.lib;libvgmstream.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -83,7 +84,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>bass.lib;libvgmstream.lib;libg7221_decode.lib;libmpg123-0.lib;libvorbis.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>bass.lib;libspeex/libspeex.lib;libvorbis.lib;avcodec.lib;avformat.lib;avutil.lib;libmpg123-0.lib;libg719_decode.lib;libcelt-0061.lib;libcelt-0110.lib;libatrac9.lib;libvgmstream.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers />
     </Link>
     <PostBuildEvent>
