@@ -96,6 +96,8 @@ BASS_VGMSTREAM_API HSTREAM BASS_VGMSTREAM_StreamCreate(const char* file, DWORD f
 	return h;
 }
 
+STREAMFILE* open_memory_streamfile(uint8_t* buf, size_t bufsize, const char* name);
+
 BASS_VGMSTREAM_API HSTREAM BASS_VGMSTREAM_StreamCreateFromMemory(unsigned char* buf, int bufsize, const char* name, DWORD flags)
 {
 	HSTREAM h;
