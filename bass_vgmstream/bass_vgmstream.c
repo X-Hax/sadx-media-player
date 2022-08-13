@@ -113,6 +113,12 @@ BASS_VGMSTREAM_API HSTREAM BASS_VGMSTREAM_StreamCreateFromMemory(unsigned char* 
 	if (vgmstream->channels > 1)
 		flags &= ~BASS_SAMPLE_3D; // Cannot create 3D samples from stereo
 
+	if (vgmstream->loop_flag)
+	{
+		if (vgmstream->loop_start_sample <= 1 && vgmstream->loop_end_sample == 1)
+			vgmstream->loop_flag = 0; // Disable invalid loops (B01_00_02 in HIGHWAY_BANK01)
+	}
+
 	h = BASS_StreamCreate(vgmstream->sample_rate, vgmstream->channels, flags, &vgmStreamProc, vgmstream);
 	if (!h)
 		return 0;
