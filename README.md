@@ -1,29 +1,23 @@
-bass-vgmstream
+sadx-media-player
 ==============
 
-BASS plugin that plays vgmstream compatible music.
-BASS is an easy-to-use cross platform audio interface. vgmstream is
-a library that can render video game music formats.
+This library enables playback of video through FFMPEG and audio through BASS and vgmstream in Sonic Adventure DX PC (2004).
 
-This project is a simple plugin for BASS that allows people to
-easily use vgmstream within their bass project. Simply call
-`BASS_VGMSTREAM_StreamCreate` with a filename and some stream flags to
-create a BASS stream from a file readable by vgmstream.
+The library is only meant to be used with the [SADX Mod Loader](https://github.com/X-Hax/sadx-mod-loader). For general use, refer to the projects linked below.
 
-Required binaries
+Dependencies
 =================
-Your application should have the following binaries available:
+ - [BASS audio library](https://www.un4seen.com/) version 2.4.17
+ - [vgmstream](https://github.com/vgmstream/vgmstream) ([custom edit for this library](https://github.com/vgmstream/vgmstream/tree/abbd226b36e3ec895699dfdec3a33ce5c201998c))
+ - [bass_vgmstream](https://github.com/angryzor/bass-vgmstream) ([fork used in this library](https://github.com/X-Hax/bass-vgmstream))
+ - [FFMPEG](https://github.com/FFmpeg/FFmpeg) (Windows XP compatible build 7.1-596-5bc3b7f from [here](https://rwijnsma.home.xs4all.nl/files/ffmpeg/?C=M;O=D))
 
-* BASS itself: `bass.dll`
-* BASS_VGMSTREAM: `bass_vgmstream.dll`
-* vgmstream related libraries:
-`avcodec-vgmstream-58.dll`,
-`avformat-vgmstream-58.dll`,
-`avutil-vgmstream-56.dll`,
-`libatrac9.dll`,
-`libcelt-0061.dll`,
-`libcelt-0110.dll`,
-`libg719_decode.dll`,
-`libmpg123-0.dll`,
-`libspeex.dll`,
-`libvorbis.dll`
+Notes
+=================
+1. The [vgmstream](https://github.com/vgmstream/vgmstream/tree/abbd226b36e3ec895699dfdec3a33ce5c201998c) submodule was altered to use generic FFMPEG 7.1 libraries instead of stripped 5.1.2 libraries that are used normally in vgmstream. This was done to reduce the number of required DLLs because the FFMPEG-based video player already uses `avcodec`, `avformat`, `avutil` etc.
+2. Support for the following codecs and formats was removed in the `vgmstream` submodule to reduce the number of DLLs:
+- `libg719_decode` (music from Namco games)
+- `LibAtrac9` (format of PS4 and Vita music) 
+- `libcelt` (.fsb and other related formats)
+- `libspeex` (voice format in some EA games)
+3. x64 configurations were removed because the game and the Mod Loader are 32-bit only.
