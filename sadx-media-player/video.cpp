@@ -5,7 +5,7 @@
 #include <thread>
 #include <vector>
 #include "bass_vgmstream.h"
-#include "video.h"
+#include "sadx-media-player.h"
 
 extern "C"
 {

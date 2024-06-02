@@ -21,9 +21,12 @@
     <ClInclude Include="bass_vgmstream.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="sadx-media-player.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="dllmain.c">
+    <ClCompile Include="dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="bass_vgmstream_extensions.c">

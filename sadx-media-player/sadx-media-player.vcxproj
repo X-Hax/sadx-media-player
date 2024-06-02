@@ -26,10 +26,10 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v141_xp</PlatformToolset>
     <WholeProgramOptimization>false</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -71,8 +71,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)bass\c;$(SolutionDir)vgmstream\src;$(SolutionDir)vgmstream\ext_includes;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)bass\c;$(SolutionDir)Release;$(SolutionDir)vgmstream\ext_libs;$(LibraryPath)</LibraryPath>
+    <IncludePath>..\bass\c;..\vgmstream\src;..\vgmstream\ext_includes;..\ffmpeg\include;$(IncludePath)</IncludePath>
+    <LibraryPath>..\bass\c;..\Release;..\vgmstream\ext_libs;..\ffmpeg\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -98,9 +98,9 @@
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>bass.lib;libspeex/libspeex.lib;libvorbis.lib;avcodec.lib;avformat.lib;avutil.lib;libmpg123-0.lib;libg719_decode.lib;libcelt-0061.lib;libcelt-0110.lib;libatrac9.lib;libvgmstream.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>bass.lib;libvorbis.lib;avcodec.lib;avformat.lib;avutil.lib;swscale.lib;swresample.lib;libmpg123-0.lib;libvgmstream.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -175,11 +175,12 @@
   <ItemGroup>
     <ClInclude Include="bass_vgmstream.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="sadx-media-player.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="bass_vgmstream.c" />
     <ClCompile Include="bass_vgmstream_extensions.c" />
-    <ClCompile Include="dllmain.c">
+    <ClCompile Include="dllmain.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</CompileAsManaged>
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsManaged>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
