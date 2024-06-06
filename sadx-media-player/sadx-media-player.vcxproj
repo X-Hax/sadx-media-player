@@ -174,7 +174,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="bass_vgmstream.h" />
-    <ClInclude Include="resource.h" />
     <ClInclude Include="sadx-media-player.h" />
   </ItemGroup>
   <ItemGroup>
@@ -195,9 +194,6 @@
       </PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="video.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="sadx-media-player.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
