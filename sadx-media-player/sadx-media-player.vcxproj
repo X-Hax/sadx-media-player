@@ -72,7 +72,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>..\bass\c;..\vgmstream\src;..\vgmstream\ext_includes;..\ffmpeg\include;$(IncludePath)</IncludePath>
-    <LibraryPath>..\bass\c;..\Release;..\vgmstream\ext_libs;..\ffmpeg\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)bass\c;$(SolutionDir)vgmstream\ext_libs;$(SolutionDir)ffmpeg\lib;$(OutDir);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -81,8 +81,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>..\bass\c;..\vgmstream\src;..\vgmstream\ext_includes;..\ffmpeg\include;$(IncludePath)</IncludePath>
-    <LibraryPath>..\bass\c;..\Release;..\vgmstream\ext_libs;..\ffmpeg\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)bass\c;$(SolutionDir)vgmstream\src;$(SolutionDir)vgmstream\ext_includes;$(SolutionDir)ffmpeg\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)bass\c;$(SolutionDir)vgmstream\ext_libs;$(SolutionDir)ffmpeg\lib;$(OutDir);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
